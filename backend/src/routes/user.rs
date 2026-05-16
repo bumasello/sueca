@@ -45,7 +45,7 @@ async fn login(
             }
 
             let cookie = format!(
-                "session_id={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600",
+                "session_id={}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=3600",
                 session_id
             );
 
@@ -65,7 +65,7 @@ async fn login(
                 }
 
                 let cookie = format!(
-                    "session_id={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600",
+                    "session_id={}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=3600",
                     session_id
                 );
 
