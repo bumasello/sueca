@@ -20,15 +20,15 @@ pub fn JoinButton(Props { room_id }: &Props) -> Html {
         let room_id = room_id.clone();
         let nav_handle = nav.clone();
         spawn_local(async move {
-            let resp = Request::post(&format!(
+            let mut req = Request::post(&format!(
                 "{}/rooms/{}/join",
                 crate::config::API_URL,
                 &room_id
-            ))
-            .credentials(web_sys::RequestCredentials::Include)
-            .send()
-            .await
-            .unwrap();
+            ));
+            if let Some(token) = crate::storage::get_token() {
+                req = req.header("Authorization", &format!("Bearer {}", token));
+            }
+            let resp = req.send().await.unwrap();
 
             if resp.ok() {
                 nav_handle.push(&Route::Game { room_id });

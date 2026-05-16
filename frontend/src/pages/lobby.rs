@@ -14,11 +14,11 @@ pub fn Lobby() -> Html {
     use_effect_with(*refresh, move |_| {
         let rooms_handler = rooms_handle.clone();
         spawn_local(async move {
-            let resp = Request::get(&format!("{}/rooms", crate::config::API_URL))
-                .credentials(web_sys::RequestCredentials::Include)
-                .send()
-                .await
-                .unwrap();
+            let mut req = Request::get(&format!("{}/rooms", crate::config::API_URL));
+            if let Some(token) = crate::storage::get_token() {
+                req = req.header("Authorization", &format!("Bearer {}", token));
+            }
+            let resp = req.send().await.unwrap();
 
             if resp.ok() {
                 let mut data = resp.json::<Vec<RoomSummaryStruct>>().await.unwrap();
@@ -33,11 +33,11 @@ pub fn Lobby() -> Html {
         let refresh_handler = refresh.clone();
         spawn_local(async move {
             let mut updated = (*rooms_create_handler).clone();
-            let resp = Request::post(&format!("{}/rooms", crate::config::API_URL))
-                .credentials(web_sys::RequestCredentials::Include)
-                .send()
-                .await
-                .unwrap();
+            let mut req = Request::post(&format!("{}/rooms", crate::config::API_URL));
+            if let Some(token) = crate::storage::get_token() {
+                req = req.header("Authorization", &format!("Bearer {}", token));
+            }
+            let resp = req.send().await.unwrap();
 
             if resp.ok() {
                 let data = resp.json::<common::RoomSummaryStruct>().await.unwrap();

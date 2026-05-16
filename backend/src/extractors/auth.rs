@@ -19,16 +19,12 @@ where
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let app_state = AppStruct::from_ref(state);
 
-        let cookie_header = parts
+        let session_id = parts
             .headers
-            .get(axum::http::header::COOKIE)
+            .get(axum::http::header::AUTHORIZATION)
             .and_then(|v| v.to_str().ok())
-            .unwrap_or("");
-
-        let session_id = cookie_header
-            .split(';')
-            .find(|s| s.contains("session_id="))
-            .map(|s| s.replace("session_id=", "").trim().to_string())
+            .and_then(|v| v.strip_prefix("Bearer "))
+            .map(|s| s.to_string())
             .ok_or(StatusCode::UNAUTHORIZED)?;
 
         let sessions = app_state.sessions.read().unwrap();

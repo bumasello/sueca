@@ -19,6 +19,11 @@ pub struct PayloadUsername {
     pub username: String,
 }
 
+#[derive(Deserialize)]
+struct LoginResponse {
+    session_id: String,
+}
+
 #[component]
 pub fn ReqButton(
     Props {
@@ -46,13 +51,18 @@ pub fn ReqButton(
                 errors.set(vec!["Username precisa estar preenchido".to_string()]);
                 return;
             }
-            Request::post(&format!("{}{}", crate::config::API_URL, path))
-                .credentials(web_sys::RequestCredentials::Include)
+            let resp = Request::post(&format!("{}{}", crate::config::API_URL, path))
                 .json(&payload)
                 .unwrap()
                 .send()
                 .await
                 .unwrap();
+
+            if resp.ok() {
+                if let Ok(data) = resp.json::<LoginResponse>().await {
+                    crate::storage::set_token(&data.session_id);
+                }
+            }
 
             nav_handle.push(&Route::Lobby);
         });

@@ -27,15 +27,15 @@ pub fn Game(Props { room_id }: &Props) -> Html {
         let state_int = game_room_state_effect.clone();
 
         spawn_local(async move {
-            let resp = Request::get(&format!(
+            let mut req = Request::get(&format!(
                 "{}/rooms/{}/state",
                 crate::config::API_URL,
                 room_id_ini_handler.clone()
-            ))
-            .credentials(web_sys::RequestCredentials::Include)
-            .send()
-            .await
-            .unwrap();
+            ));
+            if let Some(token) = crate::storage::get_token() {
+                req = req.header("Authorization", &format!("Bearer {}", token));
+            }
+            let resp = req.send().await.unwrap();
 
             if resp.ok() {
                 let data = resp.json::<GameRoomStateStruct>().await.unwrap();
@@ -47,15 +47,15 @@ pub fn Game(Props { room_id }: &Props) -> Html {
             let int_game_room_state_handler = state_int.clone();
             let room_id_int_handler = room_id_int_handler.clone();
             spawn_local(async move {
-                let resp = Request::get(&format!(
+                let mut req = Request::get(&format!(
                     "{}/rooms/{}/state",
                     crate::config::API_URL,
                     room_id_int_handler.clone()
-                ))
-                .credentials(web_sys::RequestCredentials::Include)
-                .send()
-                .await
-                .unwrap();
+                ));
+                if let Some(token) = crate::storage::get_token() {
+                    req = req.header("Authorization", &format!("Bearer {}", token));
+                }
+                let resp = req.send().await.unwrap();
 
                 if resp.ok() {
                     let data = resp.json::<GameRoomStateStruct>().await.unwrap();
@@ -299,19 +299,15 @@ pub fn Game(Props { room_id }: &Props) -> Html {
                                                         let onclick = Callback::from(move |_: MouseEvent| {
                                                             let room_id = room_id.clone();
                                                             spawn_local(async move {
-                                                                Request::post(
-                                                                        &format!(
-                                                                            "{}/rooms/{}/play",
-                                                                            crate::config::API_URL,
-                                                                            room_id,
-                                                                        ),
-                                                                    )
-                                                                    .credentials(web_sys::RequestCredentials::Include)
-                                                                    .json(&card)
-                                                                    .unwrap()
-                                                                    .send()
-                                                                    .await
-                                                                    .unwrap();
+                                                                let mut builder = Request::post(&format!(
+                                                                    "{}/rooms/{}/play",
+                                                                    crate::config::API_URL,
+                                                                    room_id,
+                                                                ));
+                                                                if let Some(token) = crate::storage::get_token() {
+                                                                    builder = builder.header("Authorization", &format!("Bearer {}", token));
+                                                                }
+                                                                builder.json(&card).unwrap().send().await.unwrap();
                                                             });
                                                         });
 

@@ -29,7 +29,7 @@ async fn main() {
     let layer = CorsLayer::new()
         .allow_credentials(true)
         .allow_methods([Method::GET, Method::POST])
-        .allow_headers([axum::http::header::CONTENT_TYPE])
+        .allow_headers([axum::http::header::CONTENT_TYPE, axum::http::header::AUTHORIZATION])
         .allow_origin(origin);
 
     let state = crate::state::AppStruct {

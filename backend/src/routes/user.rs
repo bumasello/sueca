@@ -1,18 +1,23 @@
 use crate::{extractors::auth::AuthenticatedUser, state::AppStruct};
 use axum::{
     extract::{Json, State},
-    http::{header::SET_COOKIE, HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Router,
 };
 use mongodb::bson::{doc, Document, Uuid};
 use mongodb::Collection;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 struct UserLogin {
     pub username: String,
+}
+
+#[derive(Serialize)]
+struct LoginResponse {
+    session_id: String,
 }
 
 pub fn create_user_router() -> Router<AppStruct> {
@@ -44,17 +49,7 @@ async fn login(
                 sessions.insert(session_id.clone(), payload.username.clone());
             }
 
-            let cookie = format!(
-                "session_id={}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=3600",
-                session_id
-            );
-
-            (
-                StatusCode::OK,
-                [(SET_COOKIE, cookie)],
-                "Login realizado com sucesso",
-            )
-                .into_response()
+            (StatusCode::OK, Json(LoginResponse { session_id })).into_response()
         }
         None => match col.insert_one(doc! {"username": &payload.username}).await {
             Ok(_) => {
@@ -64,17 +59,7 @@ async fn login(
                     sessions.insert(session_id.clone(), payload.username.clone());
                 }
 
-                let cookie = format!(
-                    "session_id={}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=3600",
-                    session_id
-                );
-
-                (
-                    StatusCode::OK,
-                    [(SET_COOKIE, cookie)],
-                    "Login realizado com sucesso",
-                )
-                    .into_response()
+                (StatusCode::OK, Json(LoginResponse { session_id })).into_response()
             }
             Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         },

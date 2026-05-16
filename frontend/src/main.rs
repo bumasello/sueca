@@ -1,6 +1,7 @@
 mod components;
 mod config;
 mod pages;
+mod storage;
 
 use yew::prelude::*;
 use yew_router::prelude::*;
