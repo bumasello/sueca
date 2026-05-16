@@ -1,0 +1,6 @@
+[build]
+  command = "rustup target add wasm32-unknown-unknown && cargo install --locked trunk && cd frontend && trunk build --release"
+  publish = "frontend/dist"
+
+[build.environment]
+  API_URL = "https://sueca-4c4k.onrender.com"
