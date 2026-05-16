@@ -19,10 +19,8 @@ use tower_http::cors::CorsLayer;
 async fn main() {
     dotenv().ok();
 
-    let origin = [
-        "http://127.0.0.1:8080".parse().unwrap(),
-        "http://localhost:8080".parse().unwrap(),
-    ];
+    let frontend_url = env::var("FRONTEND_URL").unwrap_or("http://localhost:8080".to_string());
+    let origin: HeaderValue = frontend_url.parse().unwrap();
 
     let db = services::database_service::database().await;
 
@@ -48,7 +46,8 @@ async fn main() {
         .layer(layer)
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("localhost:3000")
+    let port = env::var("PORT").unwrap_or("3000".to_string());
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
         .await
         .unwrap();
 
