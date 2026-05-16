@@ -1,0 +1,2 @@
+macro_names = ["yew::html", "html"]
+attr_value_brace_style = "Preserve"

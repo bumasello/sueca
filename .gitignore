@@ -1,0 +1,7 @@
+/target
+.env
+frontend/dist
+frontend/.trunk
+CLAUDE.md
+
+
