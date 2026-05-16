@@ -4,3 +4,8 @@
 
 [build.environment]
   API_URL = "https://sueca-4c4k.onrender.com"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
