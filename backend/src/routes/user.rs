@@ -51,7 +51,15 @@ async fn login(
 
             (StatusCode::OK, Json(LoginResponse { session_id })).into_response()
         }
-        None => match col.insert_one(doc! {"username": &payload.username}).await {
+        None => match col
+            .insert_one(doc! {"username": &payload.username,
+            "sueca": {
+                "games": 0,
+                "wins": 0,
+                "points": 0
+            }})
+            .await
+        {
             Ok(_) => {
                 let session_id = Uuid::new().to_string();
                 {

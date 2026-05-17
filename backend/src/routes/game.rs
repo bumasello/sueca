@@ -9,7 +9,8 @@ use axum::{
     Json, Router,
 };
 use common::{Card, GameRoomStateStruct, RoomStatus, RoomSummaryStruct, Suit};
-use mongodb::bson::Uuid;
+use mongodb::bson::{doc, Document, Uuid};
+use mongodb::Collection;
 
 use crate::{
     extractors::auth::AuthenticatedUser,
@@ -156,15 +157,54 @@ async fn play_card(
     user: AuthenticatedUser,
     Json(card): Json<Card>,
 ) -> impl IntoResponse {
-    let mut rooms = state.rooms.write().unwrap();
+    let (result, game_over) = {
+        let mut rooms = state.rooms.write().unwrap();
+        let room = match rooms.get_mut(&id_room) {
+            Some(r) => r,
+            None => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    "Sala não 
+  existe",
+                )
+                    .into_response()
+            }
+        };
 
-    let room = match rooms.get_mut(&id_room) {
-        Some(r) => r,
-        None => return (StatusCode::BAD_REQUEST, "Sala não existe").into_response(),
+        let result = room.process_move(user.username, card);
+        let game_over = if room.status == RoomStatus::Finished {
+            Some((room.players.clone(), room.scores))
+        } else {
+            None
+        };
+        (result, game_over)
     };
 
-    match room.process_move(user.username, card) {
-        Ok(_) => StatusCode::OK.into_response(),
+    match result {
+        Ok(_) => {
+            if let Some((players, scores)) = game_over {
+                let winning_team = if scores[0] > scores[1] {
+                    0usize
+                } else {
+                    1usize
+                };
+                let col: Collection<Document> = state.db.collection(&state.collection_name);
+                for (idx, player) in players.iter().enumerate() {
+                    let won = (idx % 2) == winning_team;
+                    col.update_one(
+                        doc! {"username": player},
+                        doc! { "$inc": {
+                            "sueca.games": 1,
+                            "sueca.wins": if won { 1 } else { 0 },
+                            "sueca.points": if won {scores[idx % 2]} else {0}
+                        }},
+                    )
+                    .await
+                    .ok();
+                }
+            }
+            StatusCode::OK.into_response()
+        }
         Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
     }
 }

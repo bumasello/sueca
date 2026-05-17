@@ -9,6 +9,7 @@ pub fn Lobby() -> Html {
     let rooms: UseStateHandle<Vec<RoomSummaryStruct>> = use_state(|| vec![]);
     let rooms_handle = rooms.clone();
     let rooms_create = rooms.clone();
+    let rooms_handle_att = rooms.clone();
     let refresh = use_state(|| 0u32);
 
     use_effect_with(*refresh, move |_| {
@@ -48,17 +49,41 @@ pub fn Lobby() -> Html {
         });
     });
 
+    let onclick_list = Callback::from(move |_: MouseEvent| {
+        let rooms_create_handler_att = rooms_handle_att.clone();
+        spawn_local(async move {
+            let mut req = Request::get(&format!("{}/rooms", crate::config::API_URL));
+            if let Some(token) = crate::storage::get_token() {
+                req = req.header("Authorization", &format!("Bearer {}", token));
+            }
+            let resp = req.send().await.unwrap();
+            if resp.ok() {
+                let mut data = resp.json::<Vec<RoomSummaryStruct>>().await.unwrap();
+                data.sort_by_key(|k| k.created_at);
+                rooms_create_handler_att.set(data);
+            }
+        });
+    });
+
     html! {
         <div class="min-h-screen bg-gray-950 px-4 py-8">
             <div class="max-w-2xl mx-auto">
                 <div class="flex items-center justify-between mb-6">
                     <h1 class="text-2xl font-semibold text-gray-100">{"Lobby"}</h1>
-                    <button
-                        class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg text-sm hover:bg-gray-200 transition-colors"
-                        onclick={onclick}
-                    >
-                        {"Criar nova sala"}
-                    </button>
+                    <div class="flex justify-between gap-2">
+                        <button
+                            class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+                            onclick={onclick_list}
+                        >
+                            {"Atualizar lista"}
+                        </button>
+                        <button
+                            class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+                            onclick={onclick}
+                        >
+                            {"Criar nova sala"}
+                        </button>
+                    </div>
                 </div>
                 <div>
                     {if rooms.is_empty() {
